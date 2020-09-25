@@ -329,4 +329,8 @@ public class FlutterFirebaseMessagingService extends FirebaseMessagingService {
     }
     return false;
   }
+
+  private void test(){
+    Log.e("TEST","TEST 1");
+  }
 }
