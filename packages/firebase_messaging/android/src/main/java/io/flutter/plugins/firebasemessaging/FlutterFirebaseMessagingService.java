@@ -10,7 +10,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Handler;
-import android.os.Looper;
 import android.os.Process;
 import android.util.Log;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
@@ -44,8 +43,6 @@ public class FlutterFirebaseMessagingService extends FirebaseMessagingService {
   private static final String BACKGROUND_SETUP_CALLBACK_HANDLE_KEY = "background_setup_callback";
   private static final String BACKGROUND_MESSAGE_CALLBACK_HANDLE_KEY =
       "background_message_callback";
-
-  private static final String TYPE_CALL_INCOMING = "6525c531-937a-4533-8408-3f67118c2d13";
 
   // TODO(kroikie): make isIsolateRunning per-instance, not static.
   private static AtomicBoolean isIsolateRunning = new AtomicBoolean(false);
@@ -90,19 +87,11 @@ public class FlutterFirebaseMessagingService extends FirebaseMessagingService {
   public void onMessageReceived(final RemoteMessage remoteMessage) {
     // If application is running in the foreground use local broadcast to handle message.
     // Otherwise use the background isolate to handle message.
-    Log.e("MyTag","onMessageReceived " + remoteMessage.toString());
-    final Context ctx = this;
     if (isApplicationForeground(this)) {
-      if (isInComingCallNotification(remoteMessage)){
-        handleIncomingCallNotification(ctx, remoteMessage);
-      }else{
-        sendRemoteMessage(ctx, remoteMessage);
-      }
+      Intent intent = new Intent(ACTION_REMOTE_MESSAGE);
+      intent.putExtra(EXTRA_REMOTE_MESSAGE, remoteMessage);
+      LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
     } else {
-      if (isInComingCallNotification(remoteMessage)){
-        handleIncomingCallNotification(ctx, remoteMessage);
-        return;
-      }
       // If background isolate is not running yet, put message in queue and it will be handled
       // when the isolate starts.
       if (!isIsolateRunning.get()) {
@@ -341,46 +330,7 @@ public class FlutterFirebaseMessagingService extends FirebaseMessagingService {
     return false;
   }
 
-  private void handleIncomingCallNotification(final Context ctx, final RemoteMessage remoteMessage){
-    final Handler handler = new Handler(Looper.getMainLooper());
-    handler.postDelayed(new Runnable() {
-      @Override
-      public void run() {
-        sendRemoteMessage(ctx, remoteMessage);
-      }
-    }, 2000);
-
-    Intent launchIntent = getPackageManager().getLaunchIntentForPackage(getApplicationContext().getPackageName());
-    if (launchIntent != null) {
-      Log.e("MyTag","start an appp");
-      startActivity(launchIntent);//null pointer check in case package name was not found
-    }
-  }
-
-  private void sendRemoteMessage(Context ctx, RemoteMessage remoteMessage){
-    Intent intent = new Intent(ACTION_REMOTE_MESSAGE);
-    intent.putExtra(EXTRA_REMOTE_MESSAGE, remoteMessage);
-    LocalBroadcastManager.getInstance(ctx).sendBroadcast(intent);
-  }
-
-  private boolean isInComingCallNotification(RemoteMessage remoteMessage){
-    Map<String,String> map = remoteMessage.getData();
-    if (map != null){
-      Iterator it = map.entrySet().iterator();
-      while (it.hasNext()) {
-        Map.Entry pair = (Map.Entry)it.next();
-        Log.e("MyTag","------isInComingCallNotification " + pair.getKey() + " = " + pair.getValue());
-      }
-      String conversationId = map.get("ConversationID");
-      String senderId = map.get("SenderID");
-      String bodyTypeId = map.get("TypeID");
-      return isNotEmpty(conversationId) && isNotEmpty(senderId) && isNotEmpty(bodyTypeId) && bodyTypeId.equals(TYPE_CALL_INCOMING);
-    }
-//    if(conversationID.isNotEmpty && senderID.isNotEmpty && bodyTypeID == MessageTypeID.TypeCallIncoming)
-      return false;
-  }
-
-  private boolean isNotEmpty(String txt){
-    return (txt != null && !txt.isEmpty());
+  private void test(){
+    Log.e("TEST","TEST 1");
   }
 }
